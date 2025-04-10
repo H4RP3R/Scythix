@@ -106,18 +106,19 @@ func RunDaemon(songPath string) error {
 		}
 	}()
 
+	var ok bool
 	for {
 		select {
-		case song, ok := <-srv.nextSong():
+		case srv.currentSong, ok = <-srv.nextSong():
 			if ok {
-				srv.ctrl = &beep.Ctrl{Streamer: beep.Loop(1, song.Streamer), Paused: false}
+				srv.ctrl = &beep.Ctrl{Streamer: beep.Loop(1, srv.currentSong.Streamer), Paused: false}
 				srv.vol = &effects.Volume{
 					Streamer: srv.ctrl,
 					Base:     2,
 					Volume:   currentVol,
 					Silent:   false,
 				}
-				speaker.Init(song.Format.SampleRate, song.Format.SampleRate.N(time.Second/10))
+				speaker.Init(srv.currentSong.Format.SampleRate, srv.currentSong.Format.SampleRate.N(time.Second/10))
 				speaker.Play(beep.Seq(srv.vol, beep.Callback(func() {
 					srv.ready()
 				})))

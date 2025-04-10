@@ -11,7 +11,7 @@ import (
 type Song struct {
 	Streamer beep.StreamSeekCloser
 	Format   beep.Format
-	Prop     *audioProperties
+	Prop     *AudioProperties
 	Next     *Song
 }
 

@@ -11,7 +11,7 @@ import (
 )
 
 // audioProperties represents metadata about an audio file.
-type audioProperties struct {
+type AudioProperties struct {
 	FileName string
 	Title    string
 	Artist   string
@@ -21,7 +21,7 @@ type audioProperties struct {
 }
 
 // Display prints the audio properties to the console.
-func (p *audioProperties) Display() {
+func (p *AudioProperties) Display() {
 	fmt.Println(p.FileName)
 	fmt.Println(strings.Repeat("-", p.delimiterLen()))
 	fmt.Printf("Title  | %s\n", p.Title)
@@ -33,7 +33,7 @@ func (p *audioProperties) Display() {
 
 // delimiterLen returns the length of the horizontal delimiter used in the Display method,
 // which is calculated as the maximum length of the string fields in the audioProperties structure.
-func (p *audioProperties) delimiterLen() int {
+func (p *AudioProperties) delimiterLen() int {
 	maxLen := 0
 	rv := reflect.ValueOf(p).Elem()
 	for i := 0; i < rv.NumField(); i++ {
@@ -52,8 +52,8 @@ func (p *audioProperties) delimiterLen() int {
 	return maxLen
 }
 
-func NewAudioProperties(filePath string) (*audioProperties, error) {
-	prop := audioProperties{
+func NewAudioProperties(filePath string) (*AudioProperties, error) {
+	prop := AudioProperties{
 		Title:  "-",
 		Artist: "-",
 		Album:  "-",

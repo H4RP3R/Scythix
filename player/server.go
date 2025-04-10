@@ -9,8 +9,9 @@ import (
 
 // PlayerServer represents a server for managing music playback via RPC.
 type PlayerServer struct {
-	PID      int
-	playlist *Playlist
+	PID         int
+	playlist    *Playlist
+	currentSong *Song
 
 	ctrl *beep.Ctrl
 	vol  *effects.Volume
@@ -109,6 +110,13 @@ func (p *PlayerServer) Queue(songPath *string, reply *struct{}) error {
 
 	p.playlist.Queue(song)
 	log.Debugf("Add song to playlist, songs in queue: %d", p.playlist.Size())
+
+	return nil
+}
+
+// TrackInfo returns the metadata of the current song in the playlist.
+func (p *PlayerServer) TrackInfo(args *struct{}, prop *AudioProperties) error {
+	*prop = *p.currentSong.Prop
 
 	return nil
 }

@@ -159,7 +159,14 @@ func Run() {
 			fmt.Printf("vol: %g\n", volLvl)
 		}
 	case info == true:
-
+		var prop AudioProperties
+		client := connectRPC()
+		defer client.Close()
+		if err := client.Call("PlayerServer.TrackInfo", &struct{}{}, &prop); err != nil {
+			log.Error(err)
+		} else {
+			prop.Display()
+		}
 	case path != "":
 		if ok := pathExists(path); ok {
 			if pathExists(lockFile) {
