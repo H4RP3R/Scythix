@@ -1,9 +1,9 @@
 package player
 
 import (
+	"errors"
 	"fmt"
 	"net"
-	"net/http"
 	"net/rpc"
 	"os"
 	"syscall"
@@ -41,9 +41,11 @@ func RunDaemon(songPath string) error {
 		}
 
 		fmt.Printf("[PID:%d] Playing\n", pid)
-		log.Debugf("Process forked with PID:%d\n", pid)
+		log.Debugf("Process forked with PID:%d", pid)
 		os.Exit(0)
 	}
+
+	done := make(chan struct{})
 
 	f, err := os.Create(lockFile)
 	if err != nil {
@@ -80,7 +82,14 @@ func RunDaemon(songPath string) error {
 		log.Debug(msg, currentVol, volLimitMin)
 	}
 
+	srv := NewPlayerServer()
+	srv.Queue(&songPath, &struct{}{})
+	srv.ready()
+
 	defer func() {
+		playerConf.VolLevel = mapVolumeToScale(srv.vol.Volume)
+		conf.Write(playerConf)
+
 		err := os.Remove(lockFile)
 		if err != nil {
 			log.Errorf("Unable to remove lock file: %v", err)
@@ -89,21 +98,24 @@ func RunDaemon(songPath string) error {
 		}
 	}()
 
-	srv := NewPlayerServer()
-	srv.Queue(&songPath, &struct{}{})
-	srv.ready()
-
 	rpc.Register(srv)
-	rpc.HandleHTTP()
-	listener, err := net.Listen("tcp4", ":4400")
+	listener, err := net.Listen("unixpacket", "/tmp/scythix.sock")
 	if err != nil {
 		return err
 	}
+	defer listener.Close()
 
 	go func() {
-		err := http.Serve(listener, nil)
-		if err != nil {
-			log.Error(err)
+		for {
+			conn, err := listener.Accept()
+			if err != nil {
+				if errors.Is(err, net.ErrClosed) {
+					return
+				}
+				log.Error(err)
+				return
+			}
+			rpc.ServeConn(conn)
 		}
 	}()
 
@@ -121,12 +133,15 @@ func RunDaemon(songPath string) error {
 				}
 				speaker.Init(srv.currentSong.Format.SampleRate, srv.currentSong.Format.SampleRate.N(time.Second/10))
 				speaker.Play(beep.Seq(srv.vol, beep.Callback(func() {
+					currentVol = srv.vol.Volume
 					srv.ready()
 				})))
 			} else {
+				close(done)
 				return nil
 			}
 		case <-srv.done:
+			close(done)
 			log.Debug("Player stopped.")
 			return nil
 		}

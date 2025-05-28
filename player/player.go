@@ -13,12 +13,13 @@ import (
 	"github.com/h2non/filetype"
 	log "github.com/sirupsen/logrus"
 
+	"scythix/conf"
 	"scythix/env"
 )
 
 const (
-	defaultLogDir      = ".cache"
-	defaultLogFileName = "scythix.log"
+	logDir      = ".cache"
+	logFileName = "scythix.log"
 )
 
 var (
@@ -77,7 +78,7 @@ func mapScaleToVolume(scale float64) float64 {
 }
 
 func connectRPC() *rpc.Client {
-	client, err := rpc.DialHTTP("tcp4", ":4400")
+	client, err := rpc.Dial("unixpacket", "/tmp/scythix.sock")
 	if err != nil {
 		log.Fatalf("Player server connection failed: %v", err)
 	}
@@ -95,8 +96,6 @@ func Run() {
 	var turnDown bool
 	var vol int
 	var info bool
-	var logTarget string
-	// var confPath string
 
 	flag.StringVar(&path, "play", "", "Starts playing the specified audio file")
 	flag.StringVar(&queued, "queue", "", "Add the specified audio file to the playback queue")
@@ -107,8 +106,6 @@ func Run() {
 	flag.BoolVar(&turnDown, "turn-down", false, "Decrease volume")
 	flag.IntVar(&vol, "vol", -1, "Set volume value")
 	flag.BoolVar(&info, "info", false, "Display track info")
-	flag.StringVar(&logTarget, "log", "file", "Destination for log output")
-	// flag.StringVar(&confPath, "conf", "", "Specify config file path")
 	flag.Parse()
 
 	switch {
@@ -205,17 +202,33 @@ func init() {
 		log.Error(err)
 	}
 
-	logDir := path.Join(homeDir, defaultLogDir)
+	logDir := path.Join(homeDir, logDir)
 	err = os.MkdirAll(logDir, os.ModePerm)
 	if err != nil {
 		log.Error(err)
 	}
 
-	logPath := path.Join(logDir, defaultLogFileName)
+	logPath := path.Join(logDir, logFileName)
 	logFile, err := os.OpenFile(logPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	logLevel := log.DebugLevel
+
+	if playerConf, err := conf.Load(); err == nil {
+		levelMap := map[string]log.Level{
+			"debug": log.DebugLevel,
+			"info":  log.InfoLevel,
+			"warn":  log.WarnLevel,
+			"error": log.ErrorLevel,
+			"fatal": log.FatalLevel,
+			"panic": log.PanicLevel,
+		}
+		if level, ok := levelMap[playerConf.LogLevel]; ok {
+			logLevel = level
+		}
+	}
 	log.SetOutput(logFile)
-	log.SetLevel(log.DebugLevel)
+	log.SetLevel(logLevel)
 }
