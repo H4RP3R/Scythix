@@ -3,6 +3,7 @@ module scythix
 go 1.23.3
 
 require (
+	github.com/BurntSushi/toml v1.5.0
 	github.com/dhowden/tag v0.0.0-20240417053706-3d75831295e8
 	github.com/gopxl/beep v1.4.1
 	github.com/h2non/filetype v1.1.3
