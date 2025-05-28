@@ -1,17 +1,18 @@
 package conf
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"path"
+
+	"github.com/BurntSushi/toml"
 
 	"scythix/env"
 )
 
 const (
 	defaultConfPath = ".config/scythix"
-	confFileName    = "conf.json"
+	confFileName    = "conf.toml"
 )
 
 var (
@@ -22,7 +23,8 @@ var (
 var HomeDir string
 
 type config struct {
-	VolLevel float64 `json:"volume_level"`
+	VolLevel float64 `toml:"volume_level"`
+	LogLevel string  `toml:"log_level"`
 }
 
 func Load(argPath ...string) (*config, error) {
@@ -42,17 +44,7 @@ func Load(argPath ...string) (*config, error) {
 
 	cfg := &config{}
 
-	if _, err := os.Stat(confPath); err != nil {
-		return nil, fmt.Errorf("%w: %w", ErrLoadConfig, err)
-	}
-
-	confData, err := os.ReadFile(confPath)
-	if err != nil {
-		return nil, err
-	}
-
-	err = json.Unmarshal(confData, cfg)
-	if err != nil {
+	if _, err := toml.DecodeFile(confPath, cfg); err != nil {
 		return nil, err
 	}
 
@@ -73,6 +65,7 @@ func CreateDefault() (*config, error) {
 
 	defaultConf := config{
 		VolLevel: 16,
+		LogLevel: "debug",
 	}
 
 	f, err := os.Create(path.Join(confPath, confFileName))
@@ -81,26 +74,14 @@ func CreateDefault() (*config, error) {
 	}
 	defer f.Close()
 
-	confData, err := json.Marshal(defaultConf)
-	if err != nil {
-		return nil, err
-	}
-
-	_, err = f.Write(confData)
-	if err != nil {
-		return nil, err
-	}
+	encoder := toml.NewEncoder(f)
+	encoder.Encode(defaultConf)
 
 	return &defaultConf, nil
 }
 
 func Write(cfg *config) error {
 	homeDir, err := env.GetHomeDir()
-	if err != nil {
-		return err
-	}
-
-	confData, err := json.Marshal(cfg)
 	if err != nil {
 		return err
 	}
@@ -112,10 +93,8 @@ func Write(cfg *config) error {
 	}
 	defer f.Close()
 
-	_, err = f.Write(confData)
-	if err != nil {
-		return err
-	}
+	encoder := toml.NewEncoder(f)
+	encoder.Encode(cfg)
 
 	return nil
 }
