@@ -89,7 +89,7 @@ func RunDaemon(songPath string) error {
 		}
 	}()
 
-	srv := NePlayerServer()
+	srv := NewPlayerServer()
 	srv.Queue(&songPath, &struct{}{})
 	srv.ready()
 

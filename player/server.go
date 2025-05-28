@@ -131,7 +131,7 @@ func (p *PlayerServer) nextSong() chan *Song {
 	return p.playlist.SongChan
 }
 
-func NePlayerServer() *PlayerServer {
+func NewPlayerServer() *PlayerServer {
 	p := PlayerServer{
 		playlist: NewPlaylist(),
 		ctrl:     &beep.Ctrl{},
