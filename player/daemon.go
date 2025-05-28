@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"net/rpc"
 	"os"
-	"scythix/conf"
 	"syscall"
 	"time"
 
@@ -14,6 +13,8 @@ import (
 	"github.com/gopxl/beep/effects"
 	"github.com/gopxl/beep/speaker"
 	log "github.com/sirupsen/logrus"
+
+	"scythix/conf"
 )
 
 const lockFile = "/var/lock/scythix.lock"

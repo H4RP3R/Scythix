@@ -6,13 +6,14 @@ import (
 	"net/rpc"
 	"os"
 	"path"
-	"scythix/env"
 
 	"github.com/gopxl/beep"
 	"github.com/gopxl/beep/flac"
 	"github.com/gopxl/beep/mp3"
 	"github.com/h2non/filetype"
 	log "github.com/sirupsen/logrus"
+
+	"scythix/env"
 )
 
 const (
