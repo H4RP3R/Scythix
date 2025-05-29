@@ -6,6 +6,7 @@ import (
 	"net/rpc"
 	"os"
 	"path"
+	"path/filepath"
 
 	"github.com/gopxl/beep"
 	"github.com/gopxl/beep/flac"
@@ -22,12 +23,6 @@ const (
 	logFileName = "scythix.log"
 )
 
-var (
-	ErrNoFilePath        = fmt.Errorf("file not specified")
-	ErrInvalidPath       = fmt.Errorf("invalid path specified")
-	ErrUnsupportedFormat = fmt.Errorf("unsupported format")
-)
-
 // pathExists returns true if the file at the given path exists and false otherwise.
 func pathExists(path string) bool {
 	_, err := os.Stat(path)
@@ -35,6 +30,17 @@ func pathExists(path string) bool {
 		return false
 	}
 	return true
+}
+
+// normalizePath takes a string representation of a path and returns an absolute
+// and clean representation of that path.
+func normalizePath(path string) (string, error) {
+	path = filepath.Clean(path)
+	var err error
+	if path, err = filepath.Abs(path); err != nil {
+		return "", err
+	}
+	return path, nil
 }
 
 // getFileType takes a string representation of a path to a file and returns its extension.
@@ -171,7 +177,13 @@ func Run() {
 				log.Debug("Attempt to run more then one instance of the program")
 				fmt.Println("Already in use")
 			} else {
-				err := RunDaemon(path)
+				path, err := normalizePath(path)
+				if err != nil {
+					log.Error(err)
+					fmt.Printf("Failed to normalize path: %v", err)
+					return
+				}
+				err = RunDaemon(path)
 				if err != nil {
 					log.Error(err)
 					fmt.Printf("Unable to run Scythix: %v", err)
@@ -184,9 +196,15 @@ func Run() {
 		if ok := pathExists(queued); ok {
 			// If the lock file exists, then playback is on.
 			if pathExists(lockFile) {
+				queued, err := normalizePath(queued)
+				if err != nil {
+					log.Error(err)
+					fmt.Printf("Unable to get absolute file path: %v", err)
+					return
+				}
 				client := connectRPC()
 				defer client.Close()
-				err := client.Call("PlayerServer.Queue", &queued, &struct{}{})
+				err = client.Call("PlayerServer.Queue", &queued, &struct{}{})
 				if err != nil {
 					log.Error(err)
 					fmt.Printf("Unable to queue: %v", err)
