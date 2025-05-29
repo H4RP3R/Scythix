@@ -31,13 +31,18 @@ func RunDaemon(songPath string) error {
 	if _, isChild := os.LookupEnv("FORKED"); !isChild {
 		// Fork and execute a new process with the same program arguments and
 		// an additional environment variable "FORKED=1".
-		pid, err := syscall.ForkExec(os.Args[0], os.Args, &syscall.ProcAttr{
+		exePath, err := os.Executable()
+		if err != nil {
+			log.Errorf("Failed to fork process: %v", err)
+			return fmt.Errorf("%w: %v", ErrFailedToFork, err)
+		}
+		pid, err := syscall.ForkExec(exePath, os.Args, &syscall.ProcAttr{
 			Env:   append(os.Environ(), "FORKED=1"),
 			Files: []uintptr{uintptr(syscall.Stderr), uintptr(syscall.Stdout), uintptr(syscall.Stdin)},
 		})
 		if err != nil {
-			log.Errorf("ForkExec failed: %v\n", err)
-			return err
+			log.Errorf("ForkExec failed: %v", err)
+			return fmt.Errorf("%w: %v", ErrFailedToFork, err)
 		}
 
 		fmt.Printf("[PID:%d] Playing\n", pid)
