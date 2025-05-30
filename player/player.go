@@ -93,15 +93,18 @@ func connectRPC() *rpc.Client {
 }
 
 func Run() {
-	var path string
-	var queued string
-	var pause bool
-	var stop bool
-	var mute bool
-	var turnUp bool
-	var turnDown bool
-	var vol int
-	var info bool
+	var (
+		path     string
+		queued   string
+		pause    bool
+		stop     bool
+		mute     bool
+		turnUp   bool
+		turnDown bool
+		vol      int
+		info     bool
+		list     bool
+	)
 
 	flag.StringVar(&path, "play", "", "Starts playing the specified audio file")
 	flag.StringVar(&queued, "queue", "", "Add the specified audio file to the playback queue")
@@ -112,6 +115,7 @@ func Run() {
 	flag.BoolVar(&turnDown, "turn-down", false, "Decrease volume")
 	flag.IntVar(&vol, "vol", -1, "Set volume value")
 	flag.BoolVar(&info, "info", false, "Display track info")
+	flag.BoolVar(&list, "list", false, "Display current playlist")
 	flag.Parse()
 
 	switch {
@@ -170,6 +174,15 @@ func Run() {
 			log.Error(err)
 		} else {
 			prop.Display()
+		}
+	case list == true:
+		var playlist string
+		client := connectRPC()
+		defer client.Close()
+		if err := client.Call("PlayerServer.PlaylistInfo", &struct{}{}, &playlist); err != nil {
+			log.Error(err)
+		} else {
+			fmt.Println(playlist)
 		}
 	case path != "":
 		if ok := pathExists(path); ok {

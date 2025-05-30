@@ -72,6 +72,18 @@ func (p *Playlist) Size() int {
 	return p.size
 }
 
+// ListSongs returns a slice of all songs in the playlist, in the order they appear.
+func (p *Playlist) ListSongs() []Song {
+	songs := []Song{}
+	current := p.Head
+	for current != nil {
+		songs = append(songs, *current)
+		current = current.Next
+	}
+
+	return songs
+}
+
 // NewPlaylist creates a new Playlist object and starts a goroutine that
 // controls the lifetime of the playlist.
 func NewPlaylist() *Playlist {
@@ -80,13 +92,17 @@ func NewPlaylist() *Playlist {
 	p.NextChan = make(chan struct{})
 
 	go func() {
+		var cur *Song
 		for range p.NextChan {
-			if p.Head == nil {
+			if cur == nil {
+				cur = p.Head
+			}
+			if cur == nil {
 				close(p.SongChan)
 				return
 			}
-			p.SongChan <- p.Head
-			p.Head = p.Head.Next
+			p.SongChan <- cur
+			cur = cur.Next
 		}
 	}()
 

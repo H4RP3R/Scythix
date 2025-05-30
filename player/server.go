@@ -1,6 +1,10 @@
 package player
 
 import (
+	"fmt"
+	"math"
+	"strings"
+
 	"github.com/gopxl/beep"
 	"github.com/gopxl/beep/effects"
 	"github.com/gopxl/beep/speaker"
@@ -118,6 +122,24 @@ func (p *PlayerServer) Queue(songPath *string, reply *struct{}) error {
 func (p *PlayerServer) TrackInfo(args *struct{}, prop *AudioProperties) error {
 	*prop = *p.currentSong.Prop
 
+	return nil
+}
+
+// PlaylistInfo writes a formatted string containing the playlist contents,
+// including song numbers, file names, and an indicator for the currently playing song.
+func (p *PlayerServer) PlaylistInfo(args *struct{}, infoMsg *string) error {
+	var sb strings.Builder
+	numCap := int(math.Log10(float64(p.playlist.Size())))
+	for i, song := range p.playlist.ListSongs() {
+		if song == *p.currentSong {
+			sb.WriteRune('►')
+		} else {
+			sb.WriteRune(' ')
+		}
+		sb.WriteString(fmt.Sprintf("%0*d [%s]\n", numCap, i+1, song.Prop.FileName))
+	}
+
+	*infoMsg = sb.String()
 	return nil
 }
 
