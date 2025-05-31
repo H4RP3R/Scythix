@@ -143,6 +143,20 @@ func (p *PlayerServer) PlaylistInfo(args *struct{}, infoMsg *string) error {
 	return nil
 }
 
+// Next skips to the next track. If the current track is the last one, stops playback.
+// Otherwise, closes the current song's streamer to start the next one.
+func (p *PlayerServer) Next(args *struct{}, reply *struct{}) error {
+	speaker.Lock()
+	if p.currentSong.Next == nil {
+		close(p.done)
+	} else {
+		p.currentSong.Streamer.Close()
+	}
+	speaker.Unlock()
+
+	return nil
+}
+
 // ready signals the playlist that it should send the next song to the SongChan channel.
 func (p *PlayerServer) ready() {
 	p.playlist.NextChan <- struct{}{}

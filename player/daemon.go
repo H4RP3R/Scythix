@@ -129,6 +129,7 @@ func RunDaemon(songPath string) error {
 		select {
 		case srv.currentSong, ok = <-srv.nextSong():
 			if ok {
+				defer srv.currentSong.Streamer.Close()
 				srv.ctrl = &beep.Ctrl{Streamer: beep.Loop(1, srv.currentSong.Streamer), Paused: false}
 				srv.vol = &effects.Volume{
 					Streamer: srv.ctrl,

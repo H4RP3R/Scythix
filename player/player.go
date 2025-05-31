@@ -98,6 +98,7 @@ func Run() {
 		queued   string
 		pause    bool
 		stop     bool
+		next     bool
 		mute     bool
 		turnUp   bool
 		turnDown bool
@@ -110,6 +111,7 @@ func Run() {
 	flag.StringVar(&queued, "queue", "", "Add the specified audio file to the playback queue")
 	flag.BoolVar(&pause, "pause", false, "Pause playback")
 	flag.BoolVar(&stop, "stop", false, "Stop playback")
+	flag.BoolVar(&next, "next", false, "Next track")
 	flag.BoolVar(&mute, "mute", false, "Mute sound")
 	flag.BoolVar(&turnUp, "turn-up", false, "Increase volume")
 	flag.BoolVar(&turnDown, "turn-down", false, "Decrease volume")
@@ -132,6 +134,12 @@ func Run() {
 			log.Error(err)
 		} else {
 			fmt.Println("See you.")
+		}
+	case next == true:
+		client := connectRPC()
+		defer client.Close()
+		if err := client.Call("PlayerServer.Next", &struct{}{}, &struct{}{}); err != nil {
+			log.Error(err)
 		}
 	case mute == true:
 		client := connectRPC()
