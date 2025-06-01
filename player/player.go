@@ -86,6 +86,10 @@ func mapScaleToVolume(scale float64) float64 {
 func connectRPC() *rpc.Client {
 	client, err := rpc.Dial("unixpacket", "/tmp/scythix.sock")
 	if err != nil {
+		if !pathExists(lockFile) {
+			log.Debug("Player server not running")
+			os.Exit(0)
+		}
 		log.Fatalf("Player server connection failed: %v", err)
 	}
 
