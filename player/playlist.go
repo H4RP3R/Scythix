@@ -97,13 +97,12 @@ func NewPlaylist() *Playlist {
 			if cur == nil {
 				cur = p.Head
 			}
-			if cur == nil {
-				close(p.SongChan)
-				return
-			}
 			p.SongChan <- cur
 			cur = cur.Next
 		}
+
+		close(p.SongChan)
+		return
 	}()
 
 	return p

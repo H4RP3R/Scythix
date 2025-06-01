@@ -159,7 +159,11 @@ func (p *PlayerServer) Next(args *struct{}, reply *struct{}) error {
 
 // ready signals the playlist that it should send the next song to the SongChan channel.
 func (p *PlayerServer) ready() {
-	p.playlist.NextChan <- struct{}{}
+	if p.currentSong != nil && p.currentSong.Next == nil {
+		close(p.playlist.NextChan)
+	} else {
+		p.playlist.NextChan <- struct{}{}
+	}
 }
 
 // nextSong Returns the channel for receiving songs from the playlist.
