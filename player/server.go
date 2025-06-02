@@ -153,9 +153,9 @@ func (p *PlayerServer) Next(args *struct{}, reply *struct{}) error {
 	if p.currentSong.Next == nil {
 		close(p.done)
 	} else {
-		p.currentSong.Streamer.Seek(p.currentSong.Streamer.Len())
-		p.currentSong.Next.Streamer.Seek(0)
+		p.ctrl.Paused = true
 		p.currentSong = p.currentSong.Next
+		p.ready()
 	}
 	speaker.Unlock()
 
@@ -169,9 +169,9 @@ func (p *PlayerServer) Rewind(args *struct{}, reply *struct{}) error {
 	if p.currentSong.Prev == nil {
 		p.currentSong.Streamer.Seek(0)
 	} else {
-		p.currentSong.Streamer.Seek(p.currentSong.Streamer.Len())
-		p.currentSong.Prev.Streamer.Seek(0)
+		p.ctrl.Paused = true
 		p.currentSong = p.currentSong.Prev
+		p.ready()
 	}
 	defer speaker.Unlock()
 
@@ -180,7 +180,12 @@ func (p *PlayerServer) Rewind(args *struct{}, reply *struct{}) error {
 
 // ready signals the playlist that it should send the next song to the SongChan channel.
 func (p *PlayerServer) ready() {
-	p.playlist.SongChan <- p.currentSong
+	if p.currentSong != nil {
+		p.currentSong.Streamer.Seek(0)
+		p.playlist.SongChan <- p.currentSong
+	} else {
+		close(p.done)
+	}
 }
 
 // nextSong Returns the channel for receiving songs from the playlist.
