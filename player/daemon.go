@@ -141,6 +141,7 @@ func RunDaemon(songPath string) error {
 				resampled := beep.Resample(4, srv.currentSong.Format.SampleRate, beep.SampleRate(44100), srv.vol)
 				speaker.Play(beep.Seq(resampled, beep.Callback(func() {
 					currentVol = srv.vol.Volume
+					srv.currentSong = srv.currentSong.Next
 					srv.ready()
 				})))
 			} else {
