@@ -2,6 +2,7 @@ BIN_PATH := /usr/local/bin/scythix
 LOG_PATH := $(HOME)/.cache/scythix.log
 CONF_DIR := $(HOME)/.config/scythix
 LOCK_FILE := /var/lock/scythix.lock
+SOCKET_PATH := /tmp/scythix.sock
 
 install:
 	@echo "Building scythix..."
@@ -46,7 +47,32 @@ uninstall:
 	fi
     
 	@# Clean up other files
-	@rm -f "$(LOG_PATH)"
-	@rm -rf "$(CONF_DIR)"
-	@sudo rm -f "$(LOCK_FILE)" 2>/dev/null || true
+	@if [ -f "$(LOG_PATH)" ]; then \
+        rm -f "$(LOG_PATH)"; \
+        echo "Removed: $(LOG_PATH)"; \
+    else \
+        echo "Log file not found: $(LOG_PATH), skipping deleting"; \
+    fi
+
+	@if [ -d "$(CONF_DIR)" ]; then \
+		rm -rf "$(CONF_DIR)"; \
+        echo "Removed: $(CONF_DIR)"; \
+    else \
+        echo "Config directory not found: $(CONF_DIR), skipping deleting"; \
+    fi
+
+	@if [ -S "$(SOCKET_PATH)" ]; then \
+        rm -f "$(SOCKET_PATH)"; \
+        echo "Removed: $(SOCKET_PATH)"; \
+    else \
+        echo "Socket file not found: $(SOCKET_PATH), skipping deleting"; \
+    fi
+
+	@if [ -f "$(LOCK_FILE)" ]; then \
+        sudo rm -f "$(LOCK_FILE)"; \
+        echo "Removed: $(LOCK_FILE)"; \
+    else \
+        echo "Lock file not found: $(LOCK_FILE), skipping deleting"; \
+    fi
+
 	@echo "Uninstall complete"
