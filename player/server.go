@@ -112,6 +112,10 @@ func (p *PlayerServer) Queue(songPath *string, reply *struct{}) error {
 		return err
 	}
 
+	if p.currentSong == nil {
+		p.currentSong = song
+	}
+
 	p.playlist.Queue(song)
 	log.Debugf("Add song to playlist, songs in queue: %d", p.playlist.Size())
 
@@ -144,26 +148,39 @@ func (p *PlayerServer) PlaylistInfo(args *struct{}, infoMsg *string) error {
 }
 
 // Next skips to the next track. If the current track is the last one, stops playback.
-// Otherwise, closes the current song's streamer to start the next one.
 func (p *PlayerServer) Next(args *struct{}, reply *struct{}) error {
 	speaker.Lock()
 	if p.currentSong.Next == nil {
 		close(p.done)
 	} else {
-		p.currentSong.Streamer.Close()
+		p.currentSong.Streamer.Seek(p.currentSong.Streamer.Len())
+		p.currentSong.Next.Streamer.Seek(0)
+		p.currentSong = p.currentSong.Next
 	}
 	speaker.Unlock()
 
 	return nil
 }
 
+// Rewind rewinds to the previous track. If the current track is the first one,
+// rewinds to the start of the current track.
+func (p *PlayerServer) Rewind(args *struct{}, reply *struct{}) error {
+	speaker.Lock()
+	if p.currentSong.Prev == nil {
+		p.currentSong.Streamer.Seek(0)
+	} else {
+		p.currentSong.Streamer.Seek(p.currentSong.Streamer.Len())
+		p.currentSong.Prev.Streamer.Seek(0)
+		p.currentSong = p.currentSong.Prev
+	}
+	defer speaker.Unlock()
+
+	return nil
+}
+
 // ready signals the playlist that it should send the next song to the SongChan channel.
 func (p *PlayerServer) ready() {
-	if p.currentSong != nil && p.currentSong.Next == nil {
-		close(p.playlist.NextChan)
-	} else {
-		p.playlist.NextChan <- struct{}{}
-	}
+	p.playlist.SongChan <- p.currentSong
 }
 
 // nextSong Returns the channel for receiving songs from the playlist.

@@ -13,6 +13,7 @@ type Song struct {
 	Format   beep.Format
 	Prop     *AudioProperties
 	Next     *Song
+	Prev     *Song
 }
 
 func NewSong(songPath string) (*Song, error) {
@@ -50,7 +51,6 @@ type Playlist struct {
 	Head     *Song
 	size     int
 	SongChan chan *Song
-	NextChan chan struct{}
 }
 
 // Queue adds a new song to the end of the playlist.
@@ -63,6 +63,7 @@ func (p *Playlist) Queue(song *Song) {
 			current = current.Next
 		}
 		current.Next = song
+		song.Prev = current
 	}
 	p.size++
 }
@@ -89,21 +90,6 @@ func (p *Playlist) ListSongs() []Song {
 func NewPlaylist() *Playlist {
 	p := &Playlist{}
 	p.SongChan = make(chan *Song)
-	p.NextChan = make(chan struct{})
-
-	go func() {
-		var cur *Song
-		for range p.NextChan {
-			if cur == nil {
-				cur = p.Head
-			}
-			p.SongChan <- cur
-			cur = cur.Next
-		}
-
-		close(p.SongChan)
-		return
-	}()
 
 	return p
 }

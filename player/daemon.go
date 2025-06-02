@@ -89,7 +89,7 @@ func RunDaemon(songPath string) error {
 
 	srv := NewPlayerServer()
 	srv.Queue(&songPath, &struct{}{})
-	srv.ready()
+	go srv.ready()
 
 	defer func() {
 		playerConf.VolLevel = mapVolumeToScale(srv.vol.Volume)
@@ -124,21 +124,22 @@ func RunDaemon(songPath string) error {
 		}
 	}()
 
-	var ok bool
+	speaker.Init(beep.SampleRate(44100), beep.SampleRate(44100).N(time.Second/10))
+
 	for {
 		select {
-		case srv.currentSong, ok = <-srv.nextSong():
+		case song, ok := <-srv.nextSong():
 			if ok {
-				defer srv.currentSong.Streamer.Close()
-				srv.ctrl = &beep.Ctrl{Streamer: beep.Loop(1, srv.currentSong.Streamer), Paused: false}
+				defer song.Streamer.Close()
+				srv.ctrl = &beep.Ctrl{Streamer: beep.Loop(1, song.Streamer), Paused: false}
 				srv.vol = &effects.Volume{
 					Streamer: srv.ctrl,
 					Base:     2,
 					Volume:   currentVol,
 					Silent:   false,
 				}
-				speaker.Init(srv.currentSong.Format.SampleRate, srv.currentSong.Format.SampleRate.N(time.Second/10))
-				speaker.Play(beep.Seq(srv.vol, beep.Callback(func() {
+				resampled := beep.Resample(4, srv.currentSong.Format.SampleRate, beep.SampleRate(44100), srv.vol)
+				speaker.Play(beep.Seq(resampled, beep.Callback(func() {
 					currentVol = srv.vol.Volume
 					srv.ready()
 				})))

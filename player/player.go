@@ -103,6 +103,7 @@ func Run() {
 		pause    bool
 		stop     bool
 		next     bool
+		rew      bool
 		mute     bool
 		turnUp   bool
 		turnDown bool
@@ -116,6 +117,7 @@ func Run() {
 	flag.BoolVar(&pause, "pause", false, "Pause playback")
 	flag.BoolVar(&stop, "stop", false, "Stop playback")
 	flag.BoolVar(&next, "next", false, "Next track")
+	flag.BoolVar(&rew, "rew", false, "Rewind to previous track")
 	flag.BoolVar(&mute, "mute", false, "Mute sound")
 	flag.BoolVar(&turnUp, "turn-up", false, "Increase volume")
 	flag.BoolVar(&turnDown, "turn-down", false, "Decrease volume")
@@ -143,6 +145,12 @@ func Run() {
 		client := connectRPC()
 		defer client.Close()
 		if err := client.Call("PlayerServer.Next", &struct{}{}, &struct{}{}); err != nil {
+			log.Error(err)
+		}
+	case rew == true:
+		client := connectRPC()
+		defer client.Close()
+		if err := client.Call("PlayerServer.Rewind", &struct{}{}, &struct{}{}); err != nil {
 			log.Error(err)
 		}
 	case mute == true:
