@@ -133,7 +133,7 @@ func (p *PlayerServer) TrackInfo(args *struct{}, prop *AudioProperties) error {
 // including song numbers, file names, and an indicator for the currently playing song.
 func (p *PlayerServer) PlaylistInfo(args *struct{}, infoMsg *string) error {
 	var sb strings.Builder
-	numCap := int(math.Log10(float64(p.playlist.Size())))
+	numCap := int(math.Log10(float64(p.playlist.Size()))) + 1
 	for i, song := range p.playlist.ListSongs() {
 		if song == *p.currentSong {
 			sb.WriteRune('►')
