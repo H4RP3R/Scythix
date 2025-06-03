@@ -87,6 +87,9 @@ func RunDaemon(songPath string) error {
 		log.Debug(msg, currentVol, volLimitMin)
 	}
 
+	sampleRate := beep.SampleRate(playerConf.SampleRate)
+	bufferSize := sampleRate.N(time.Second / 10)
+
 	srv := NewPlayerServer()
 	srv.Queue(&songPath, &struct{}{})
 	go srv.ready()
@@ -124,7 +127,7 @@ func RunDaemon(songPath string) error {
 		}
 	}()
 
-	speaker.Init(beep.SampleRate(44100), beep.SampleRate(44100).N(time.Second/10))
+	speaker.Init(sampleRate, bufferSize)
 
 	for {
 		select {
@@ -138,7 +141,7 @@ func RunDaemon(songPath string) error {
 					Volume:   currentVol,
 					Silent:   false,
 				}
-				resampled := beep.Resample(4, srv.currentSong.Format.SampleRate, beep.SampleRate(44100), srv.vol)
+				resampled := beep.Resample(4, srv.currentSong.Format.SampleRate, sampleRate, srv.vol)
 				speaker.Play(beep.Seq(resampled, beep.Callback(func() {
 					currentVol = srv.vol.Volume
 					srv.currentSong = srv.currentSong.Next
