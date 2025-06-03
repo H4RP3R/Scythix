@@ -13,6 +13,11 @@ import (
 const (
 	defaultConfPath = ".config/scythix"
 	confFileName    = "conf.toml"
+
+	defaultLogLevel = "debug"
+
+	defaultVolLevel   = 16
+	defaultSampleRate = 44100
 )
 
 var (
@@ -23,8 +28,9 @@ var (
 var HomeDir string
 
 type config struct {
-	VolLevel float64 `toml:"volume_level"`
-	LogLevel string  `toml:"log_level"`
+	VolLevel   float64 `toml:"volume_level"`
+	LogLevel   string  `toml:"log_level"`
+	SampleRate int     `toml:"sample_rate"`
 }
 
 func Load(argPath ...string) (*config, error) {
@@ -63,9 +69,10 @@ func CreateDefault() (*config, error) {
 		return nil, err
 	}
 
-	defaultConf := config{
-		VolLevel: 16,
-		LogLevel: "debug",
+	conf := config{
+		VolLevel:   defaultVolLevel,
+		SampleRate: defaultSampleRate,
+		LogLevel:   defaultLogLevel,
 	}
 
 	f, err := os.Create(path.Join(confPath, confFileName))
@@ -75,9 +82,9 @@ func CreateDefault() (*config, error) {
 	defer f.Close()
 
 	encoder := toml.NewEncoder(f)
-	encoder.Encode(defaultConf)
+	encoder.Encode(conf)
 
-	return &defaultConf, nil
+	return &conf, nil
 }
 
 func Write(cfg *config) error {
