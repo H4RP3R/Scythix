@@ -1,7 +1,7 @@
 BIN_PATH := /usr/local/bin/scythix
 LOG_PATH := $(HOME)/.cache/scythix.log
 CONF_DIR := $(HOME)/.config/scythix
-LOCK_FILE := /var/lock/scythix.lock
+LOCK_FILE := /tmp/scythix.lock
 SOCKET_PATH := /tmp/scythix.sock
 
 install:
