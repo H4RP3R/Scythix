@@ -17,7 +17,7 @@ import (
 	"scythix/conf"
 )
 
-const lockFile = "/var/lock/scythix.lock"
+const lockFile = "/tmp/scythix.lock"
 
 const (
 	defaultVol  float64 = -5
