@@ -26,7 +26,7 @@ const (
 	volLimitMin float64 = -12
 )
 
-func RunDaemon(songPath string) error {
+func RunDaemon(targetPath string) error {
 	// Check if the process is not a child (not forked).
 	if _, isChild := os.LookupEnv("FORKED"); !isChild {
 		// Fork and execute a new process with the same program arguments and
@@ -90,8 +90,8 @@ func RunDaemon(songPath string) error {
 	sampleRate := beep.SampleRate(playerConf.SampleRate)
 	bufferSize := sampleRate.N(time.Second / 10)
 
-	srv := NewPlayerServer()
-	srv.Queue(&songPath, &struct{}{})
+	srv := NewPlayerServer(playerConf.PlaylistDir)
+	srv.Queue(&targetPath, &struct{}{})
 	go srv.ready()
 
 	defer func() {
@@ -139,7 +139,7 @@ func RunDaemon(songPath string) error {
 					Streamer: srv.ctrl,
 					Base:     2,
 					Volume:   currentVol,
-					Silent:   false,
+					Silent:   srv.vol.Silent,
 				}
 				resampled := beep.Resample(4, srv.currentSong.Format.SampleRate, sampleRate, srv.vol)
 				speaker.Play(beep.Seq(resampled, beep.Callback(func() {
