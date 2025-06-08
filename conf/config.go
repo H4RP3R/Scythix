@@ -16,8 +16,9 @@ const (
 
 	defaultLogLevel = "debug"
 
-	defaultVolLevel   = 16
-	defaultSampleRate = 44100
+	defaultVolLevel    = 16
+	defaultSampleRate  = 44100
+	defaultPlaylistDir = "Scythix/"
 )
 
 var (
@@ -28,9 +29,10 @@ var (
 var HomeDir string
 
 type config struct {
-	VolLevel   float64 `toml:"volume_level"`
-	LogLevel   string  `toml:"log_level"`
-	SampleRate int     `toml:"sample_rate"`
+	VolLevel    float64 `toml:"volume_level"`
+	LogLevel    string  `toml:"log_level"`
+	SampleRate  int     `toml:"sample_rate"`
+	PlaylistDir string  `toml:"playlist_dir"`
 }
 
 func Load(argPath ...string) (*config, error) {
@@ -70,9 +72,10 @@ func CreateDefault() (*config, error) {
 	}
 
 	conf := config{
-		VolLevel:   defaultVolLevel,
-		SampleRate: defaultSampleRate,
-		LogLevel:   defaultLogLevel,
+		VolLevel:    defaultVolLevel,
+		SampleRate:  defaultSampleRate,
+		LogLevel:    defaultLogLevel,
+		PlaylistDir: defaultPlaylistDir,
 	}
 
 	f, err := os.Create(path.Join(confPath, confFileName))

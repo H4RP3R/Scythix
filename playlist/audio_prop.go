@@ -1,4 +1,4 @@
-package player
+package playlist
 
 import (
 	"fmt"

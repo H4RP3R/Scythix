@@ -1,21 +1,30 @@
 package player
 
 import (
+	"errors"
 	"fmt"
 	"math"
+	"os"
+	"path"
 	"strings"
+	"time"
 
 	"github.com/gopxl/beep"
 	"github.com/gopxl/beep/effects"
 	"github.com/gopxl/beep/speaker"
 	log "github.com/sirupsen/logrus"
+
+	"scythix/env"
+	"scythix/m3u"
+	"scythix/playlist"
 )
 
 // PlayerServer represents a server for managing music playback via RPC.
 type PlayerServer struct {
 	PID         int
-	playlist    *Playlist
-	currentSong *Song
+	playlist    *playlist.Playlist
+	currentSong *playlist.Song
+	playlistDir string
 
 	ctrl *beep.Ctrl
 	vol  *effects.Volume
@@ -105,9 +114,24 @@ func (p *PlayerServer) SetVol(arg *int, reply *float64) error {
 	return nil
 }
 
-// Queue adds a song by path to the playlist.
-func (p *PlayerServer) Queue(songPath *string, reply *struct{}) error {
-	song, err := NewSong(*songPath)
+// Queue adds songs to the end of the playlist by its file path.
+// If the path is a .m3u or .m3u8 file, the entire playlist is loaded and queued.
+func (p *PlayerServer) Queue(targetPath *string, reply *struct{}) error {
+	if strings.HasSuffix(*targetPath, ".m3u") || strings.HasSuffix(*targetPath, ".m3u8") {
+		songs, err := m3u.Load(*targetPath)
+		if err != nil {
+			return err
+		}
+
+		p.playlist.Queue(songs...)
+		if p.currentSong == nil {
+			p.currentSong = p.playlist.Head
+		}
+		log.Debugf("Playlist loaded, songs in queue: %d", p.playlist.Size())
+		return nil
+	}
+
+	song, err := playlist.NewSong(*targetPath)
 	if err != nil {
 		return err
 	}
@@ -123,7 +147,7 @@ func (p *PlayerServer) Queue(songPath *string, reply *struct{}) error {
 }
 
 // TrackInfo returns the metadata of the current song in the playlist.
-func (p *PlayerServer) TrackInfo(args *struct{}, prop *AudioProperties) error {
+func (p *PlayerServer) TrackInfo(args *struct{}, prop *playlist.AudioProperties) error {
 	*prop = *p.currentSong.Prop
 
 	return nil
@@ -178,6 +202,40 @@ func (p *PlayerServer) Rewind(args *struct{}, reply *struct{}) error {
 	return nil
 }
 
+// SavePlaylist saves the current playlist to a file in the M3U format at the specified path.
+// If the path is "-", it will be replaced with the default playlist directory.
+// If the directory does not exist, it will be created.
+// The file name will be in the format "YYYY-MM-DD_HH-MM-SS.m3u".
+// The method returns the path of the saved file through the reply parameter.
+func (p *PlayerServer) SavePlaylist(dir *string, reply *string) error {
+	if *dir == "-" {
+		homeDir, err := env.GetHomeDir()
+		if err != nil {
+			return err
+		}
+		*dir = path.Join(homeDir, p.playlistDir)
+	} else {
+		if !env.PathExists(*dir) {
+			return env.ErrInvalidPath
+		}
+	}
+
+	err := os.Mkdir(*dir, 0755)
+	if err != nil && !errors.Is(err, os.ErrExist) {
+		return err
+	}
+
+	t := time.Now()
+	fileName := fmt.Sprintf("%d-%02d-%02d_%02d-%02d-%02d.m3u", t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second())
+	err = m3u.Save(p.playlist, path.Join(*dir, fileName))
+	if err != nil {
+		return err
+	}
+
+	*reply = path.Join(*dir, fileName)
+	return nil
+}
+
 // ready signals the playlist that it should send the next song to the SongChan channel.
 func (p *PlayerServer) ready() {
 	if p.currentSong != nil {
@@ -189,16 +247,17 @@ func (p *PlayerServer) ready() {
 }
 
 // nextSong Returns the channel for receiving songs from the playlist.
-func (p *PlayerServer) nextSong() chan *Song {
+func (p *PlayerServer) nextSong() chan *playlist.Song {
 	return p.playlist.SongChan
 }
 
-func NewPlayerServer() *PlayerServer {
+func NewPlayerServer(playlistDir string) *PlayerServer {
 	p := PlayerServer{
-		playlist: NewPlaylist(),
-		ctrl:     &beep.Ctrl{},
-		vol:      &effects.Volume{},
-		done:     make(chan struct{}),
+		playlist:    playlist.NewPlaylist(),
+		playlistDir: playlistDir,
+		ctrl:        &beep.Ctrl{},
+		vol:         &effects.Volume{},
+		done:        make(chan struct{}),
 	}
 
 	return &p
