@@ -43,6 +43,9 @@ func mapScaleToVolume(scale float64) float64 {
 	return (scale / 2) - 12
 }
 
+// connectRPC creates an RPC client to the player server via Unix socket.
+// If the server is not running and the lock file is absent, it exits the program.
+// Otherwise, it logs the connection failure and terminates.
 func connectRPC() *rpc.Client {
 	client, err := rpc.Dial("unixpacket", "/tmp/scythix.sock")
 	if err != nil {
