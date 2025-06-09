@@ -26,6 +26,8 @@ const (
 	volLimitMin float64 = -12
 )
 
+// RunDaemon forks the current process to run in the background, initializes the player server
+// and manages playback of the specified target audio file or playlist.
 func RunDaemon(targetPath string) error {
 	// Check if the process is not a child (not forked).
 	if _, isChild := os.LookupEnv("FORKED"); !isChild {
