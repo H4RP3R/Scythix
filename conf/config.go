@@ -1,3 +1,5 @@
+// Package conf handles loading, creating, and saving configuration files
+// for the Scythix audio player.
 package conf
 
 import (
@@ -35,6 +37,9 @@ type config struct {
 	PlaylistDir string  `toml:"playlist_dir"`
 }
 
+// Load reads the TOML configuration file from the specified path.
+// If no path is provided, it loads from the default location in the user's home directory.
+// Returns a config pointer and any error encountered.
 func Load(argPath ...string) (*config, error) {
 	homeDir, err := env.GetHomeDir()
 	if err != nil {
@@ -59,6 +64,8 @@ func Load(argPath ...string) (*config, error) {
 	return cfg, nil
 }
 
+// CreateDefault creates the default configuration directory and file
+// with predefined default settings. It returns the created config and any error.
 func CreateDefault() (*config, error) {
 	homeDir, err := env.GetHomeDir()
 	if err != nil {
@@ -90,6 +97,8 @@ func CreateDefault() (*config, error) {
 	return &conf, nil
 }
 
+// Write saves the provided configuration struct to the default config file path.
+// Returns any error encountered during the write process.
 func Write(cfg *config) error {
 	homeDir, err := env.GetHomeDir()
 	if err != nil {
