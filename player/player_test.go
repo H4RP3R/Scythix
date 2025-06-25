@@ -55,3 +55,41 @@ func Test_normalizePath(t *testing.T) {
 		})
 	}
 }
+
+func Test_mapVolumeToScale(t *testing.T) {
+	tests := []struct {
+		name string
+		vol  float64
+		want float64
+	}{
+		{"min volume", -12, 0},
+		{"negative volume", -10, 4},
+		{"zero volume", 0, 24},
+		{"positive volume", 6, 36},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := mapVolumeToScale(tt.vol); got != tt.want {
+				t.Errorf("mapVolumeToScale(%v) = %v; want %v", tt.vol, got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_mapScaleToVolume(t *testing.T) {
+	tests := []struct {
+		name  string
+		scale float64
+		want  float64
+	}{
+		{"min scale", 0, -12},
+		{"positive scale", 24, 0},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := mapScaleToVolume(tt.scale); got != tt.want {
+				t.Errorf("mapScaleToVolume(%v) = %v; want %v", tt.scale, got, tt.want)
+			}
+		})
+	}
+}
