@@ -94,13 +94,13 @@ func Run() {
 	flag.Parse()
 
 	switch {
-	case pause == true:
+	case pause:
 		client := connectRPC()
 		defer client.Close()
 		if err := client.Call("PlayerServer.Pause", &struct{}{}, &struct{}{}); err != nil {
 			log.Error(err)
 		}
-	case stop == true:
+	case stop:
 		client := connectRPC()
 		defer client.Close()
 		if err := client.Call("PlayerServer.Stop", &struct{}{}, &struct{}{}); err != nil {
@@ -108,25 +108,25 @@ func Run() {
 		} else {
 			fmt.Println("See you.")
 		}
-	case next == true:
+	case next:
 		client := connectRPC()
 		defer client.Close()
 		if err := client.Call("PlayerServer.Next", &struct{}{}, &struct{}{}); err != nil {
 			log.Error(err)
 		}
-	case rew == true:
+	case rew:
 		client := connectRPC()
 		defer client.Close()
 		if err := client.Call("PlayerServer.Rewind", &struct{}{}, &struct{}{}); err != nil {
 			log.Error(err)
 		}
-	case mute == true:
+	case mute:
 		client := connectRPC()
 		defer client.Close()
 		if err := client.Call("PlayerServer.Mute", &struct{}{}, &struct{}{}); err != nil {
 			log.Error(err)
 		}
-	case turnUp == true:
+	case turnUp:
 		var volLvl float64
 		client := connectRPC()
 		defer client.Close()
@@ -135,7 +135,7 @@ func Run() {
 		} else {
 			fmt.Printf("vol: %g\n", volLvl)
 		}
-	case turnDown == true:
+	case turnDown:
 		var volLvl float64
 		client := connectRPC()
 		defer client.Close()
@@ -153,7 +153,7 @@ func Run() {
 		} else if float64(vol) != volLvl {
 			fmt.Printf("vol: %g\n", volLvl)
 		}
-	case info == true:
+	case info:
 		var prop playlist.AudioProperties
 		client := connectRPC()
 		defer client.Close()
@@ -162,7 +162,7 @@ func Run() {
 		} else {
 			prop.Display()
 		}
-	case list == true:
+	case list:
 		var playlist string
 		client := connectRPC()
 		defer client.Close()
@@ -171,7 +171,7 @@ func Run() {
 		} else {
 			fmt.Println(playlist)
 		}
-	case save == true:
+	case save:
 		client := connectRPC()
 		defer client.Close()
 		var playlistPath string
