@@ -2,6 +2,7 @@ package player
 
 import (
 	"testing"
+	"time"
 )
 
 func TestPlayerServer_Pause(t *testing.T) {
@@ -27,5 +28,29 @@ func TestPlayerServer_Pause(t *testing.T) {
 	}
 	if srv.ctrl.Paused {
 		t.Errorf("Pause did not toggle pause state back to false")
+	}
+}
+
+func TestPlayerServer_Stop(t *testing.T) {
+	srv := NewPlayerServer(".")
+
+	if srv.done == nil {
+		t.Fatal("Channel done not initialized")
+	}
+
+	if err := srv.Stop(&struct{}{}, &struct{}{}); err != nil {
+		t.Fatalf("Stop() returned error: %v", err)
+	}
+
+	select {
+	case <-srv.done:
+		// Channel closed, test passes
+	case <-time.After(time.Second):
+		t.Error("Timeout waiting for done channel to close")
+	}
+
+	// Calling Stop again should not panic and succeed
+	if err := srv.Stop(&struct{}{}, &struct{}{}); err != nil {
+		t.Fatalf("Second Stop() call returned error: %v", err)
 	}
 }
