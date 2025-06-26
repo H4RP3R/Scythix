@@ -7,6 +7,7 @@ import (
 	"os"
 	"path"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gopxl/beep"
@@ -29,7 +30,8 @@ type PlayerServer struct {
 	ctrl *beep.Ctrl
 	vol  *effects.Volume
 
-	done chan struct{}
+	stopOnce sync.Once
+	done     chan struct{}
 }
 
 // Pause toggle the player's paused state.
@@ -45,7 +47,9 @@ func (p *PlayerServer) Pause(args *struct{}, reply *struct{}) error {
 
 // Stop halts playback and signals the daemon to finish by closing the `done` channel.
 func (p *PlayerServer) Stop(args *struct{}, reply *struct{}) error {
-	close(p.done)
+	p.stopOnce.Do(func() {
+		close(p.done)
+	})
 
 	log.Debug("Got stop command")
 
