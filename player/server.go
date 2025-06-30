@@ -62,7 +62,7 @@ func (p *PlayerServer) Mute(args *struct{}, reply *struct{}) error {
 	p.vol.Silent = !p.vol.Silent
 	speaker.Unlock()
 
-	if p.vol.Silent == true {
+	if p.vol.Silent {
 		log.Debug("Player muted.")
 	} else {
 		log.Debug("Player unmuted.")
