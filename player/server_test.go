@@ -54,3 +54,28 @@ func TestPlayerServer_Stop(t *testing.T) {
 		t.Fatalf("Second Stop() call returned error: %v", err)
 	}
 }
+
+func TestPlayerServer_Mute(t *testing.T) {
+	playlistDir := "."
+	srv := NewPlayerServer(playlistDir)
+
+	if srv.vol.Silent {
+		t.Fatalf("Invalid initial value: srv.vol.Silent=%t", srv.vol.Silent)
+	}
+
+	err := srv.Mute(&struct{}{}, &struct{}{})
+	if err != nil {
+		t.Fatalf("Mute() returned error: %v", err)
+	}
+	if !srv.vol.Silent {
+		t.Errorf("Mute did not toggle mute state to true")
+	}
+
+	err = srv.Mute(&struct{}{}, &struct{}{})
+	if err != nil {
+		t.Fatalf("Mute() returned error: %v", err)
+	}
+	if srv.vol.Silent {
+		t.Errorf("Mute did not toggle mute state back to false")
+	}
+}
