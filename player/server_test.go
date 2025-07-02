@@ -1,6 +1,7 @@
 package player
 
 import (
+	"errors"
 	"testing"
 	"time"
 )
@@ -174,5 +175,65 @@ func TestPlayerServer_TurnDown(t *testing.T) {
 	currentVol := mapScaleToVolume(currentScale)
 	if currentVol < volLimitMin {
 		t.Errorf("volume decreased below minimum: want currentScale<=%v, got %v", volLimitMin, currentVol)
+	}
+}
+
+func TestPlayerServer_SetVol(t *testing.T) {
+	tests := []struct {
+		name       string
+		vol        int
+		wantScale  float64
+		wantSilent bool
+		wantErr    error
+	}{
+		{
+			name:       "positive vol inside scale",
+			vol:        12,
+			wantScale:  12,
+			wantSilent: false,
+			wantErr:    nil,
+		},
+		{
+			name:       "zero vol",
+			vol:        0,
+			wantScale:  0,
+			wantSilent: true,
+			wantErr:    nil,
+		},
+		{
+			name:       "vol above maximum limit",
+			vol:        int(mapVolumeToScale(volLimitMax)) + 1,
+			wantScale:  mapVolumeToScale(volLimitMax),
+			wantSilent: false,
+			wantErr:    nil,
+		},
+		{
+			name:       "vol below minimum limit (negative vol)",
+			vol:        -1,
+			wantScale:  0,
+			wantSilent: true,
+			wantErr:    nil,
+		},
+	}
+
+	playlistDir := "."
+	srv := NewPlayerServer(playlistDir)
+	srv.vol.Volume = mapScaleToVolume(10)
+	srv.vol.Silent = true
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var gotScale float64
+			err := srv.SetVol(&tt.vol, &gotScale)
+			if !errors.Is(err, tt.wantErr) {
+				t.Errorf("SetVol() returned error %v, expected %v", err, tt.wantErr)
+			}
+			if gotScale != tt.wantScale {
+				t.Errorf("expected scale after setting volume: %v, got %v", tt.wantScale, gotScale)
+			}
+			if srv.vol.Silent != tt.wantSilent {
+				t.Errorf("expected srv.vol.Silent=%t, got %t", tt.wantSilent, srv.vol.Silent)
+			}
+		})
 	}
 }
