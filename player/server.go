@@ -101,19 +101,27 @@ func (p *PlayerServer) TurnDown(args *struct{}, reply *float64) error {
 	return nil
 }
 
-// SetVol sets the player's volume to a specific level, adjusting within the maximum limit.
+// SetVol sets the player's volume to a specific level, clamping it within the allowed range.
+// If the volume is set to the minimum, the player is muted.
 func (p *PlayerServer) SetVol(arg *int, reply *float64) error {
 	vol := mapScaleToVolume(float64(*arg))
-	speaker.Lock()
 	if vol > volLimitMax {
 		vol = volLimitMax
+	} else if vol < volLimitMin {
+		vol = volLimitMin
 	}
+
+	speaker.Lock()
 	p.vol.Volume = vol
-	p.vol.Silent = false
+	if p.vol.Volume == volLimitMin {
+		p.vol.Silent = true
+	} else {
+		p.vol.Silent = false
+	}
 	speaker.Unlock()
 
 	*reply = mapVolumeToScale(vol)
-	log.Debugf("Volume turned down to %g", mapVolumeToScale(p.vol.Volume))
+	log.Debugf("Volume set to %g", mapVolumeToScale(p.vol.Volume))
 
 	return nil
 }
