@@ -3,7 +3,15 @@ package player
 import (
 	"os"
 	"testing"
+
+	log "github.com/sirupsen/logrus"
 )
+
+func TestMain(m *testing.M) {
+	log.SetLevel(log.PanicLevel)
+	exitCode := m.Run()
+	os.Exit(exitCode)
+}
 
 func Test_normalizePath(t *testing.T) {
 	currentDir, err := os.Getwd()
