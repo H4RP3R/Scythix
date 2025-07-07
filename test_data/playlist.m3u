@@ -1,0 +1,9 @@
+#EXTM3U
+#EXTINF:,music_sample_1
+/home/zombiehunter/Projects/Scythix/test_data/sound_sample_1.flac
+#EXTINF:,music_sample_2
+/home/zombiehunter/Projects/Scythix/test_data/sound_sample_2.flac
+#EXTINF:,Throes of the Unshackled
+/home/zombiehunter/Projects/Scythix/test_data/sound_sample_1.mp3
+#EXTINF:,Crimson Horizon
+/home/zombiehunter/Projects/Scythix/test_data/sound_sample_2.mp3
