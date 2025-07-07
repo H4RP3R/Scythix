@@ -2,8 +2,12 @@ package player
 
 import (
 	"errors"
+	"os"
+	"path"
 	"testing"
 	"time"
+
+	"scythix/playlist"
 )
 
 func TestPlayerServer_Pause(t *testing.T) {
@@ -233,6 +237,107 @@ func TestPlayerServer_SetVol(t *testing.T) {
 			}
 			if srv.vol.Silent != tt.wantSilent {
 				t.Errorf("expected srv.vol.Silent=%t, got %t", tt.wantSilent, srv.vol.Silent)
+			}
+		})
+	}
+}
+
+func TestPlayerServer_Queue(t *testing.T) {
+	tests := []struct {
+		name    string
+		songs   []string
+		wantCnt int
+		wantErr error
+	}{
+		{
+			name:    "one song",
+			songs:   []string{"sound_sample_1.flac"},
+			wantCnt: 1,
+			wantErr: nil,
+		},
+		{
+			name:    "two songs",
+			songs:   []string{"sound_sample_1.flac", "sound_sample_2.flac"},
+			wantCnt: 2,
+			wantErr: nil,
+		},
+		{
+			name:    "same song multiple times",
+			songs:   []string{"sound_sample_1.flac", "sound_sample_1.flac", "sound_sample_1.flac"},
+			wantCnt: 3,
+			wantErr: nil,
+		},
+		{
+			name: "different formats",
+			songs: []string{
+				"sound_sample_1.flac",
+				"sound_sample_1.mp3",
+				"sound_sample_2.mp3",
+				"sound_sample_2.flac",
+			},
+			wantCnt: 4,
+			wantErr: nil,
+		},
+		{
+			name:    "invalid song path",
+			songs:   []string{"invalid.flac"},
+			wantCnt: 0,
+			wantErr: os.ErrNotExist,
+		},
+		{
+			name:    "unsupported file format",
+			songs:   []string{"sound_sample_1.mp2"},
+			wantCnt: 0,
+			wantErr: playlist.ErrUnsupportedFormat,
+		},
+		{
+			name:    "queue m3u playlist",
+			songs:   []string{"playlist.m3u"},
+			wantCnt: 4,
+			wantErr: nil,
+		},
+		{
+			name: "queue m3u playlist and individual songs",
+			songs: []string{
+				"playlist.m3u",
+				"sound_sample_1.flac",
+				"sound_sample_2.mp3",
+			},
+			wantCnt: 6,
+			wantErr: nil,
+		},
+		{
+			name:    "invalid playlist path",
+			songs:   []string{"invalid.m3u"},
+			wantCnt: 0,
+			wantErr: os.ErrNotExist,
+		},
+	}
+
+	playlistDir := "."
+	dataPath := "../test_data"
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			srv := NewPlayerServer(playlistDir)
+			srv.vol.Volume = mapScaleToVolume(0)
+			srv.vol.Silent = true
+			for _, song := range tt.songs {
+				songPath := path.Join(dataPath, song)
+				err := srv.Queue(&songPath, &struct{}{})
+				if !errors.Is(err, tt.wantErr) {
+					t.Errorf("Queue() returned error %v, expected %v", err, tt.wantErr)
+				}
+			}
+
+			cnt := 0
+			cur := srv.playlist.Head
+			for cur != nil {
+				cur = cur.Next
+				cnt++
+			}
+			if cnt != tt.wantCnt {
+				t.Errorf("want songs in playlist %d, got %d", tt.wantCnt, cnt)
 			}
 		})
 	}
