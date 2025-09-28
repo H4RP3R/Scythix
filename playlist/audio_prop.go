@@ -53,12 +53,7 @@ func (p *AudioProperties) delimiterLen() int {
 }
 
 func NewAudioProperties(filePath string) (*AudioProperties, error) {
-	prop := AudioProperties{
-		Title:  "-",
-		Artist: "-",
-		Album:  "-",
-		Genre:  "-",
-	}
+	prop := AudioProperties{}
 
 	f, err := os.Open(filePath)
 	if err != nil {
