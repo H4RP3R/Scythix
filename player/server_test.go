@@ -4,6 +4,7 @@ import (
 	"errors"
 	"os"
 	"path"
+	"reflect"
 	"testing"
 	"time"
 
@@ -338,6 +339,79 @@ func TestPlayerServer_Queue(t *testing.T) {
 			}
 			if cnt != tt.wantCnt {
 				t.Errorf("want songs in playlist %d, got %d", tt.wantCnt, cnt)
+			}
+		})
+	}
+}
+
+func TestPlayerServer_TrackInfo(t *testing.T) {
+	tests := []struct {
+		name     string
+		song     string
+		wantProp playlist.AudioProperties
+		wantErr  error
+	}{
+		{
+			name: "flac file with properties",
+			song: "sound_sample_1.flac",
+			wantProp: playlist.AudioProperties{
+				FileName: "sound_sample_1.flac",
+				Title:    "Throes of the Unshackled",
+				Artist:   "Void Eclipse",
+				Album:    "Resurgence of the Fallen",
+				Genre:    "Metalcore",
+				Year:     1666,
+			},
+			wantErr: nil,
+		},
+		{
+			name: "flac file no properties",
+			song: "sound_sample_1_no_prop.flac",
+			wantProp: playlist.AudioProperties{
+				FileName: "sound_sample_1_no_prop.flac",
+				Title:    "",
+				Artist:   "",
+				Album:    "",
+				Genre:    "",
+				Year:     0,
+			},
+			wantErr: nil,
+		},
+		{
+			name: "mp3 file with properties",
+			song: "sound_sample_1.mp3",
+			wantProp: playlist.AudioProperties{
+				FileName: "sound_sample_1.mp3",
+				Title:    "Throes of the Unshackled",
+				Artist:   "Void Eclipse",
+				Album:    "Resurgence of the Fallen",
+				Genre:    "Metalcore",
+				Year:     1666,
+			},
+			wantErr: nil,
+		},
+	}
+
+	playlistDir := "."
+	dataPath := "../test_data"
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			srv := NewPlayerServer(playlistDir)
+			srv.vol.Volume = mapScaleToVolume(0)
+			srv.vol.Silent = true
+			songPath := path.Join(dataPath, tt.song)
+			err := srv.Queue(&songPath, &struct{}{})
+			if err != nil {
+				t.Fatalf("Queue() returned unexpected error %v", err)
+			}
+			gotProp := playlist.AudioProperties{}
+			err = srv.TrackInfo(&struct{}{}, &gotProp)
+			if err != nil {
+				t.Errorf("TrackInfo() returned error %v, expected %v", err, tt.wantErr)
+			}
+			if !reflect.DeepEqual(tt.wantProp, gotProp) {
+				t.Errorf("want audio properties \n%+v\n, got \n%+v", tt.wantProp, gotProp)
 			}
 		})
 	}
