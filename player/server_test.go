@@ -411,8 +411,65 @@ func TestPlayerServer_TrackInfo(t *testing.T) {
 				t.Errorf("TrackInfo() returned error %v, expected %v", err, tt.wantErr)
 			}
 			if !reflect.DeepEqual(tt.wantProp, gotProp) {
-				t.Errorf("want audio properties \n%+v\n, got \n%+v", tt.wantProp, gotProp)
+				t.Errorf("want audio properties\n%+v\ngot\n%+v", tt.wantProp, gotProp)
 			}
+		})
+	}
+}
+
+func TestPlayerServer_PlaylistInfo(t *testing.T) {
+	tests := []struct {
+		name    string
+		want    string
+		wantErr error
+	}{
+		{
+			name:    "first song playing",
+			want:    "►1 [sound_sample_1.flac]\n 2 [sound_sample_2.flac]\n 3 [sound_sample_1.mp3]\n",
+			wantErr: nil,
+		},
+		{
+			name:    "second song playing",
+			want:    " 1 [sound_sample_1.flac]\n►2 [sound_sample_2.flac]\n 3 [sound_sample_1.mp3]\n",
+			wantErr: nil,
+		},
+		{
+			name:    "third song playing",
+			want:    " 1 [sound_sample_1.flac]\n 2 [sound_sample_2.flac]\n►3 [sound_sample_1.mp3]\n",
+			wantErr: nil,
+		},
+	}
+
+	playlistDir := "."
+	dataPath := "../test_data"
+	srv := NewPlayerServer(playlistDir)
+	srv.vol.Volume = mapScaleToVolume(0)
+	srv.vol.Silent = true
+
+	fileNames := []string{"sound_sample_1.flac", "sound_sample_2.flac", "sound_sample_1.mp3"}
+	for _, f := range fileNames {
+		songPath := path.Join(dataPath, f)
+		song, err := playlist.NewSong(songPath)
+		if err != nil {
+			t.Fatalf("unexpected error creating test playlist")
+		}
+		srv.playlist.Queue(song)
+	}
+	srv.currentSong = srv.playlist.Head
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var gotPlaylist string
+			err := srv.PlaylistInfo(&struct{}{}, &gotPlaylist)
+			if err != nil {
+				t.Errorf("PlaylistInfo() returned error %v, expected %v", err, tt.wantErr)
+			}
+			if tt.want != gotPlaylist {
+				t.Errorf("want playlist info\n%s\ngot\n%v", tt.want, gotPlaylist)
+			}
+
+			// Rewind forward
+			srv.currentSong = srv.currentSong.Next
 		})
 	}
 }
