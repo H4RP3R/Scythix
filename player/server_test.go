@@ -473,3 +473,44 @@ func TestPlayerServer_PlaylistInfo(t *testing.T) {
 		})
 	}
 }
+
+func TestPlayerServer_Next(t *testing.T) {
+	playlistDir := "."
+	dataPath := "../test_data"
+	srv := NewPlayerServer(playlistDir)
+	srv.vol.Volume = mapScaleToVolume(0)
+	srv.vol.Silent = true
+
+	fileNames := []string{"sound_sample_1.flac", "sound_sample_2.flac", "sound_sample_1.mp3", "sound_sample_2.mp3"}
+	for _, f := range fileNames {
+		songPath := path.Join(dataPath, f)
+		song, err := playlist.NewSong(songPath)
+		if err != nil {
+			t.Fatalf("unexpected error creating test playlist")
+		}
+		srv.playlist.Queue(song)
+	}
+
+	srv.currentSong = srv.playlist.Head
+
+	go func() {
+		for range srv.nextSong() {
+			// Readout the channel to simulate playback
+		}
+	}()
+
+	for _, filename := range fileNames {
+		if filename != srv.currentSong.Prop.FileName {
+			t.Errorf("want filename %q, got %q", filename, srv.currentSong.Prop.FileName)
+		}
+		err := srv.Next(&struct{}{}, &struct{}{})
+		if err != nil {
+			t.Errorf("Next() returned error %v", err)
+		}
+	}
+
+	_, running := <-srv.done
+	if running {
+		t.Errorf("Next() on the last song didn't stop the server")
+	}
+}
